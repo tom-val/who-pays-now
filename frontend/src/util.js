@@ -8,16 +8,6 @@ export function parseGroupRef(input) {
   return text.replace(/^.*[/#]/, '') // strip any stray prefix
 }
 
-// Default starter categories offered when a group has none yet.
-export const STARTER_CATEGORIES = [
-  { name: 'Restaurant', emoji: '🍽️' },
-  { name: 'Coffee', emoji: '☕' },
-  { name: 'Gas', emoji: '⛽' },
-  { name: 'Groceries', emoji: '🛒' },
-  { name: 'Drinks', emoji: '🍻' },
-  { name: 'Taxi', emoji: '🚕' },
-]
-
 export const EMOJI_CHOICES = [
   '🍽️', '☕', '⛽', '🛒', '🍻', '🚕', '🍕', '🎬', '🎮', '🏝️',
   '🛍️', '💊', '🧾', '🏠', '🎁', '✈️', '🚗', '🍦', '🍣', '💸',

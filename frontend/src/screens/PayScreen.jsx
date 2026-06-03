@@ -52,8 +52,6 @@ export default function PayScreen({ groupId, t, navigate }) {
   const idx = Math.min(catIndex, Math.max(0, cats.length - 1))
   const cat = cats[idx]
   const payer = cat ? members.find((m) => m.id === cat.currentPayerId) : null
-  const itsMe = payer && payer.id === meId
-  const panelColor = payer?.color || 'var(--c-violet)'
 
   // Once identity is missing from the group (member removed elsewhere), re-claim.
   useEffect(() => {
@@ -78,7 +76,9 @@ export default function PayScreen({ groupId, t, navigate }) {
   }
   const onPointerMove = (e) => {
     if (!drag.current.active) return
-    const d = e.clientX - drag.current.x0
+    let d = e.clientX - drag.current.x0
+    // Rubber-band: resist dragging past the first / last category.
+    if ((idx === 0 && d > 0) || (idx === cats.length - 1 && d < 0)) d *= 0.35
     drag.current.dx = d
     if (Math.abs(d) > 8) drag.current.moved = true
     setDx(d)
@@ -158,35 +158,44 @@ export default function PayScreen({ groupId, t, navigate }) {
         {cats.length > 1 && <div className="swipe-edge l" aria-hidden>‹</div>}
         {cats.length > 1 && <div className="swipe-edge r" aria-hidden>›</div>}
 
-        {cat ? (
-          <div
-            key={cat.id}
-            className={`panel ${itsMe ? 'mine' : ''}`}
-            style={{
-              '--panel-color': panelColor,
-              transform: `translateX(${dx}px)`,
-              transition: sliding ? 'transform 0.3s var(--ease), background 0.3s' : 'background 0.3s',
-            }}
-          >
-            <span className="cat"><span className="emoji">{cat.emoji || '💸'}</span>{cat.name}</span>
-            {payer ? (
-              <>
-                <div className="turn-label">{itsMe ? t.yourTurn : t.turnNow}</div>
-                <div className="payer">{payer.name}</div>
-                <div className="hint"><span className="tap-ring">€</span>{t.tapToPay}</div>
-              </>
-            ) : (
-              <div style={{ marginTop: 30 }}>
-                <div className="payer" style={{ fontSize: 30 }}>{t.noMembers}</div>
-                <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={(e) => { e.stopPropagation(); navigate(`/g/${groupId}/manage`) }}>{t.addPeople}</button>
-              </div>
-            )}
-          </div>
-        ) : (
+        {cats.length === 0 ? (
           <div className="panel empty-stage" style={{ '--panel-color': 'var(--surface)', color: 'var(--ink)' }}>
             <h3>{t.noCategories}</h3>
             <p className="soft" style={{ margin: '10px 0 18px' }}>{t.addFirstCat}</p>
             <button className="btn btn-primary" onClick={() => navigate(`/g/${groupId}/manage`)}>{t.addCategory}</button>
+          </div>
+        ) : (
+          <div
+            className="track"
+            style={{
+              width: `${cats.length * 100}%`,
+              transform: `translateX(calc(${-idx * (100 / cats.length)}% + ${dx}px))`,
+              transition: sliding ? 'transform 0.36s var(--ease-out)' : 'none',
+            }}
+          >
+            {cats.map((c) => {
+              const p = members.find((m) => m.id === c.currentPayerId)
+              const mine = p && p.id === meId
+              return (
+                <div className="cat-panel" key={c.id} style={{ width: `${100 / cats.length}%` }}>
+                  <div className={`panel ${mine ? 'mine' : ''}`} style={{ '--panel-color': p?.color || 'var(--c-violet)' }}>
+                    <span className="cat"><span className="emoji">{c.emoji || '💸'}</span>{c.name}</span>
+                    {p ? (
+                      <>
+                        <div className="turn-label">{mine ? t.yourTurn : t.turnNow}</div>
+                        <div className="payer">{p.name}</div>
+                        <div className="hint"><span className="tap-ring">€</span>{t.tapToPay}</div>
+                      </>
+                    ) : (
+                      <div style={{ marginTop: 30 }}>
+                        <div className="payer" style={{ fontSize: 30 }}>{t.noMembers}</div>
+                        <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={(e) => { e.stopPropagation(); navigate(`/g/${groupId}/manage`) }}>{t.addPeople}</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

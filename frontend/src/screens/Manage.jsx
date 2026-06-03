@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '../api.js'
 import { store } from '../store.js'
-import { EMOJI_CHOICES, STARTER_CATEGORIES } from '../util.js'
+import { EMOJI_CHOICES } from '../util.js'
 import { PALETTE } from './Join.jsx'
 import { Avatar, Spinner, useToast } from '../components/ui.jsx'
 
@@ -64,14 +64,6 @@ export default function Manage({ groupId, t, navigate }) {
 
   const removeCategory = async (id) => { await api.removeCategory(groupId, id); await load() }
 
-  const quickAdd = async (s) => {
-    setBusy(true)
-    try { await api.addCategory(groupId, s.name, s.emoji); await load() }
-    finally { setBusy(false) }
-  }
-  const existingNames = new Set(group.categories.map((c) => c.name.toLowerCase()))
-  const suggestions = STARTER_CATEGORIES.filter((s) => !existingNames.has(s.name.toLowerCase()))
-
   const leave = () => {
     store.clearMemberId(groupId)
     navigate('/')
@@ -110,15 +102,6 @@ export default function Manage({ groupId, t, navigate }) {
           <button className="icon-btn" onClick={() => removeCategory(c.id)} aria-label={t.remove}>✕</button>
         </div>
       ))}
-      {suggestions.length > 0 && (
-        <div className="row wrap gap-8" style={{ marginTop: 12 }}>
-          {suggestions.map((s) => (
-            <button key={s.name} className="chip" style={{ cursor: 'pointer' }} disabled={busy} onClick={() => quickAdd(s)}>
-              {s.emoji} {s.name} +
-            </button>
-          ))}
-        </div>
-      )}
       <form className="card card-pad" onSubmit={addCategory} style={{ marginTop: 12 }}>
         <label className="field-lbl">{t.addCategory}</label>
         <input className="input" value={cName} onChange={(e) => setCName(e.target.value)} placeholder="Restaurant" maxLength={40} />
