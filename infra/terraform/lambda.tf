@@ -51,17 +51,30 @@ resource "aws_cloudwatch_log_group" "lambda" {
   retention_in_days = var.log_retention_days
 }
 
+# Terraform owns the function + config; the CI pipeline ships the actual code
+# via `aws lambda update-function-code`, so we seed a placeholder zip and ignore
+# subsequent code changes.
+data "archive_file" "placeholder" {
+  type        = "zip"
+  output_path = "${path.module}/.placeholder.zip"
+
+  source {
+    content  = "placeholder"
+    filename = "placeholder.txt"
+  }
+}
+
 resource "aws_lambda_function" "api" {
   function_name = "${var.project}-api"
   role          = aws_iam_role.lambda.arn
 
-  # Self-contained .NET executable on the custom runtime.
-  runtime       = "provided.al2023"
-  handler       = "bootstrap"
+  # Framework-dependent .NET 10 on the managed runtime (handler = assembly name).
+  runtime       = "dotnet10"
+  handler       = "WhoPaysNow.Api"
   architectures = ["arm64"]
 
-  filename         = var.lambda_zip
-  source_code_hash = filebase64sha256(var.lambda_zip)
+  filename         = data.archive_file.placeholder.output_path
+  source_code_hash = data.archive_file.placeholder.output_base64sha256
 
   memory_size = var.lambda_memory
   timeout     = var.lambda_timeout
@@ -74,4 +87,9 @@ resource "aws_lambda_function" "api" {
   }
 
   depends_on = [aws_cloudwatch_log_group.lambda]
+
+  # Code is deployed by CI, not Terraform.
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
 }

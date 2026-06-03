@@ -10,12 +10,6 @@ variable "aws_region" {
   default     = "eu-central-1"
 }
 
-variable "lambda_zip" {
-  description = "Path to the built backend Lambda package (self-contained, provided.al2023)."
-  type        = string
-  default     = "../../backend/artifact/lambda.zip"
-}
-
 variable "lambda_memory" {
   description = "Lambda memory (MB)."
   type        = number

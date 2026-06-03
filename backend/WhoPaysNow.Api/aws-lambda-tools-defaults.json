@@ -1,16 +1,14 @@
 {
   "Information": [
-    "This file provides defaults for the `dotnet lambda` tooling.",
-    "The CI pipeline publishes a self-contained executable for the",
-    "provided.al2023 custom runtime, so `function-runtime` is provided.al2023."
+    "Defaults for the `dotnet lambda` tooling. The CI pipeline publishes a",
+    "framework-dependent build and ships it with `aws lambda update-function-code`."
   ],
   "profile": "",
   "region": "",
   "configuration": "Release",
   "function-architecture": "arm64",
-  "function-runtime": "provided.al2023",
+  "function-runtime": "dotnet10",
   "function-memory-size": 512,
   "function-timeout": 15,
-  "function-handler": "bootstrap",
-  "msbuild-parameters": "--self-contained true -r linux-arm64"
+  "function-handler": "WhoPaysNow.Api"
 }

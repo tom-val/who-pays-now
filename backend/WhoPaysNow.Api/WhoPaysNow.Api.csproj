@@ -4,21 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Build a self-contained executable that runs on the Lambda
-         `provided.al2023` custom runtime. This decouples us from whichever
-         managed .NET runtime AWS happens to offer. -->
-    <AWSProjectType>Lambda</AWSProjectType>
-    <AssemblyName>bootstrap</AssemblyName>
-    <OutputType>Exe</OutputType>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <!-- Tiered compilation off keeps Lambda cold starts more predictable -->
-    <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Runs the ASP.NET Core minimal API on the managed `dotnet10` Lambda
+         runtime (handler = assembly name). Framework-dependent publish keeps
+         the deployment package small; the managed runtime supplies .NET + ICU. -->
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.8.0" />
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.13.1" />
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.3" />
   </ItemGroup>
 

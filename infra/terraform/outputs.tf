@@ -18,6 +18,11 @@ output "cloudfront_distribution_id" {
   value       = aws_cloudfront_distribution.frontend.id
 }
 
+output "lambda_function_name" {
+  description = "Lambda function name — CI ships code to it with update-function-code."
+  value       = aws_lambda_function.api.function_name
+}
+
 output "dynamodb_table" {
   value = aws_dynamodb_table.groups.name
 }

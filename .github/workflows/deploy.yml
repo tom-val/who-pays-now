@@ -48,19 +48,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      # ---- 1. Build the backend Lambda package -------------------------
-      - name: Publish backend (self-contained, arm64)
-        run: |
-          dotnet publish backend/WhoPaysNow.Api/WhoPaysNow.Api.csproj \
-            -c Release -r linux-arm64 --self-contained true \
-            -o backend/publish
-      - name: Zip Lambda package
-        run: |
-          mkdir -p backend/artifact
-          cd backend/publish
-          zip -r ../artifact/lambda.zip . >/dev/null
-
-      # ---- 2. Provision / update infra ---------------------------------
+      # ---- 1. Provision / update infra ---------------------------------
       - name: Terraform init
         working-directory: infra/terraform
         run: |
@@ -78,9 +66,21 @@ jobs:
         working-directory: infra/terraform
         run: |
           echo "api_base=$(terraform output -raw api_base_url)" >> "$GITHUB_OUTPUT"
+          echo "lambda=$(terraform output -raw lambda_function_name)" >> "$GITHUB_OUTPUT"
           echo "bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
           echo "dist=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
           echo "url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
+
+      # ---- 2. Build & ship the backend code ----------------------------
+      - name: Publish backend (framework-dependent, arm64)
+        run: dotnet publish backend/WhoPaysNow.Api/WhoPaysNow.Api.csproj -c Release -r linux-arm64 -o backend/publish
+      - name: Package & deploy Lambda
+        run: |
+          ( cd backend/publish && zip -r ../lambda.zip . >/dev/null )
+          aws lambda update-function-code \
+            --function-name "${{ steps.tf.outputs.lambda }}" \
+            --zip-file fileb://backend/lambda.zip >/dev/null
+          aws lambda wait function-updated --function-name "${{ steps.tf.outputs.lambda }}"
 
       # ---- 3. Build the frontend against the live API ------------------
       - name: Install frontend deps

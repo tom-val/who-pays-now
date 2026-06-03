@@ -41,7 +41,7 @@ No accounts. Create or join a group by its unique name, or share a link.
 | Layer    | Tech                                                                   |
 |----------|------------------------------------------------------------------------|
 | Frontend | React + Vite, installable PWA (`vite-plugin-pwa`), no router dependency |
-| Backend  | .NET 10 ASP.NET Core minimal API on Lambda (`provided.al2023`, arm64)   |
+| Backend  | .NET 10 ASP.NET Core minimal API on Lambda (managed `dotnet10` runtime, arm64) |
 | Data     | DynamoDB single table (`PK = GROUP#<id>`, `SK = META \| MEMBER# \| CATEGORY#`) |
 | Infra    | Terraform (DynamoDB, Lambda, API Gateway, S3 + CloudFront)             |
 | CI/CD    | GitHub Actions — CI on PRs, deploy on `main`                           |
@@ -120,8 +120,10 @@ project), then prints the three values to add under
 
 The pipeline then, on every push to `main`:
 
-1. publishes the backend as a self-contained arm64 executable and zips it,
-2. runs `terraform apply` (provisioning/updating all infra + the Lambda code),
+1. runs `terraform apply` (provisioning/updating all infra; Terraform owns the
+   Lambda function but not its code),
+2. publishes the backend (framework-dependent, arm64) and ships it with
+   `aws lambda update-function-code`,
 3. builds the frontend with `VITE_API_BASE` pointing at the freshly-applied API,
 4. syncs `dist/` to S3 and invalidates CloudFront.
 
@@ -130,18 +132,21 @@ The PWA URL and API URL are printed in the job summary.
 ### Deploying by hand
 
 ```bash
-# build the Lambda package
-dotnet publish backend/WhoPaysNow.Api/WhoPaysNow.Api.csproj \
-  -c Release -r linux-arm64 --self-contained true -o backend/publish
-( cd backend/publish && zip -r ../artifact/lambda.zip . )
-
-# provision
+# provision (Lambda starts with a placeholder zip)
 cd infra/terraform
 terraform init -backend-config="bucket=<state-bucket>" -backend-config="region=<region>"
 terraform apply
 
+# ship the backend code onto the managed dotnet10 runtime
+cd ../..
+dotnet publish backend/WhoPaysNow.Api/WhoPaysNow.Api.csproj -c Release -r linux-arm64 -o backend/publish
+( cd backend/publish && zip -r ../lambda.zip . )
+aws lambda update-function-code \
+  --function-name "$(terraform -chdir=infra/terraform output -raw lambda_function_name)" \
+  --zip-file fileb://backend/lambda.zip
+
 # build + ship the frontend
-cd ../../frontend
+cd frontend
 VITE_API_BASE="$(terraform -chdir=../infra/terraform output -raw api_base_url)" npm run build
 aws s3 sync dist "s3://$(terraform -chdir=../infra/terraform output -raw frontend_bucket)" --delete
 ```
