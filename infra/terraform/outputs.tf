@@ -5,7 +5,14 @@ output "api_base_url" {
 
 output "cloudfront_url" {
   description = "Public URL of the PWA."
-  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+  value       = "https://${var.domain_name != "" ? var.domain_name : aws_cloudfront_distribution.frontend.domain_name}"
+}
+
+# Point your custom-domain DNS record at this:
+#   CNAME  whopays.valiunas.dev  →  cloudfront_domain
+output "cloudfront_domain" {
+  description = "CloudFront distribution domain — point your custom-domain CNAME at this."
+  value       = aws_cloudfront_distribution.frontend.domain_name
 }
 
 output "frontend_bucket" {

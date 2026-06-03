@@ -73,7 +73,8 @@ export default function PayScreen({ groupId, t, navigate }) {
   const onPointerDown = (e) => {
     drag.current = { x0: e.clientX, dx: 0, active: true, moved: false }
     setSliding(false)
-    e.currentTarget.setPointerCapture?.(e.pointerId)
+    // NB: don't setPointerCapture here — capturing on the stage redirects the
+    // click away from inner buttons (Add category) and the tappable panel.
   }
   const onPointerMove = (e) => {
     if (!drag.current.active) return
@@ -87,15 +88,13 @@ export default function PayScreen({ groupId, t, navigate }) {
     const d = drag.current.dx
     drag.current.active = false
     setSliding(true)
-    if (d <= -SWIPE_THRESHOLD && idx < cats.length - 1) goCat(idx + 1)
-    else if (d >= SWIPE_THRESHOLD && idx > 0) goCat(idx - 1)
-    else setDx(0)
-  }
-
-  const onPanelClick = () => {
-    if (drag.current.moved) return
-    if (!cat || !payer) return
-    setModal(true)
+    // A decisive horizontal swipe changes category…
+    if (d <= -SWIPE_THRESHOLD && idx < cats.length - 1) { goCat(idx + 1); return }
+    if (d >= SWIPE_THRESHOLD && idx > 0) { goCat(idx - 1); return }
+    setDx(0)
+    // …a near-stationary release is a tap to pay. (Buttons inside the stage
+    // handle their own clicks; here cat/payer are null so we no-op for them.)
+    if (Math.abs(d) < 10 && cat && payer) setModal(true)
   }
 
   const confirmPaid = async () => {
@@ -168,7 +167,6 @@ export default function PayScreen({ groupId, t, navigate }) {
               transform: `translateX(${dx}px)`,
               transition: sliding ? 'transform 0.3s var(--ease), background 0.3s' : 'background 0.3s',
             }}
-            onClick={onPanelClick}
           >
             <span className="cat"><span className="emoji">{cat.emoji || '💸'}</span>{cat.name}</span>
             {payer ? (

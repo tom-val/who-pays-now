@@ -129,6 +129,23 @@ The pipeline then, on every push to `main`:
 
 The PWA URL and API URL are printed in the job summary.
 
+### Custom domain
+
+The app is served at **https://whopays.valiunas.dev**. It reuses the existing
+`*.valiunas.dev` wildcard certificate in ACM (us-east-1) — set via the
+`acm_certificate_arn` variable — so there's no per-deploy certificate validation.
+CloudFront attaches the cert and the domain as an alias automatically on `apply`.
+
+The only manual step is pointing DNS at CloudFront, at your DNS host (Cloudflare):
+
+```
+CNAME  whopays.valiunas.dev  →  <cloudfront_domain>
+```
+
+Get the target with `terraform output -raw cloudfront_domain` (e.g.
+`d2dwwqiza3pkey.cloudfront.net`). To disable the custom domain, set
+`domain_name = ""` (CloudFront falls back to its default `*.cloudfront.net` name).
+
 ### Deploying by hand
 
 ```bash
