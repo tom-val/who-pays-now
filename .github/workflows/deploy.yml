@@ -3,7 +3,9 @@ name: Deploy
 # Deploys infra + backend + frontend to AWS.
 # Triggered manually, or automatically on push to main.
 #
-# Required GitHub configuration:
+# Required GitHub configuration. Define these on the `prod` Environment
+# (Settings → Environments → prod) — the job below targets that environment, so
+# repo-level values won't be picked up unless you also add them there:
 #   secrets.AWS_DEPLOY_ROLE_ARN   IAM role to assume via OIDC (needs perms for
 #                                 dynamodb, lambda, apigateway, s3, cloudfront,
 #                                 iam, logs + access to the TF state bucket).
@@ -26,7 +28,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
