@@ -1,0 +1,107 @@
+name: Deploy
+
+# Deploys infra + backend + frontend to AWS.
+# Triggered manually, or automatically on push to main.
+#
+# Required GitHub configuration:
+#   secrets.AWS_DEPLOY_ROLE_ARN   IAM role to assume via OIDC (needs perms for
+#                                 dynamodb, lambda, apigateway, s3, cloudfront,
+#                                 iam, logs + access to the TF state bucket).
+#   vars.AWS_REGION               e.g. eu-central-1
+#   vars.TF_STATE_BUCKET          pre-existing S3 bucket for terraform state.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write   # for AWS OIDC
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # ---- 1. Build the backend Lambda package -------------------------
+      - name: Publish backend (self-contained, arm64)
+        run: |
+          dotnet publish backend/WhoPaysNow.Api/WhoPaysNow.Api.csproj \
+            -c Release -r linux-arm64 --self-contained true \
+            -o backend/publish
+      - name: Zip Lambda package
+        run: |
+          mkdir -p backend/artifact
+          cd backend/publish
+          zip -r ../artifact/lambda.zip . >/dev/null
+
+      # ---- 2. Provision / update infra ---------------------------------
+      - name: Terraform init
+        working-directory: infra/terraform
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="dynamodb_table=who-pays-now-terraform-locks"
+      - name: Terraform apply
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve -input=false -var "aws_region=${{ vars.AWS_REGION }}"
+
+      - name: Capture Terraform outputs
+        id: tf
+        working-directory: infra/terraform
+        run: |
+          echo "api_base=$(terraform output -raw api_base_url)" >> "$GITHUB_OUTPUT"
+          echo "bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "dist=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
+
+      # ---- 3. Build the frontend against the live API ------------------
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE: ${{ steps.tf.outputs.api_base }}
+        run: npm run build
+
+      # ---- 4. Publish the frontend -------------------------------------
+      - name: Sync to S3
+        run: |
+          # Long-cache the fingerprinted assets, never cache the HTML/SW.
+          aws s3 sync frontend/dist "s3://${{ steps.tf.outputs.bucket }}" \
+            --delete --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html" --exclude "*.webmanifest" --exclude "sw.js" --exclude "registerSW.js"
+          aws s3 sync frontend/dist "s3://${{ steps.tf.outputs.bucket }}" \
+            --cache-control "no-cache" \
+            --exclude "*" --include "index.html" --include "*.webmanifest" --include "sw.js" --include "registerSW.js"
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation --distribution-id "${{ steps.tf.outputs.dist }}" --paths "/*"
+
+      - name: Summary
+        run: echo "### Deployed → ${{ steps.tf.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

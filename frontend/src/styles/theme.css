@@ -1,0 +1,248 @@
+/* ===========================================================
+   Who Pays Now — light, playful theme
+   Design language carried over from the original handoff bundle.
+   =========================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+:root {
+  /* surfaces — warm cream */
+  --bg:        oklch(0.985 0.010 95);
+  --bg-2:      oklch(0.965 0.014 90);
+  --surface:   #ffffff;
+  --surface-2: oklch(0.978 0.010 95);
+  --surface-3: oklch(0.962 0.014 90);
+
+  /* ink */
+  --ink:       oklch(0.28 0.030 285);
+  --ink-soft:  oklch(0.50 0.022 285);
+  --ink-faint: oklch(0.64 0.018 285);
+  --line:      oklch(0.915 0.012 285);
+  --line-soft: oklch(0.945 0.010 285);
+
+  /* brand */
+  --primary:        oklch(0.585 0.205 285);
+  --primary-hover:  oklch(0.535 0.210 285);
+  --primary-ink:    #ffffff;
+  --primary-soft:   oklch(0.955 0.040 285);
+  --primary-softer: oklch(0.975 0.022 285);
+  --ring:           oklch(0.585 0.205 285 / 0.35);
+
+  /* playful accent set — shared chroma/lightness, varied hue */
+  --c-violet: oklch(0.62 0.19 285);
+  --c-coral:  oklch(0.68 0.18 28);
+  --c-mint:   oklch(0.68 0.13 165);
+  --c-amber:  oklch(0.76 0.14 75);
+  --c-sky:    oklch(0.66 0.14 235);
+  --c-pink:   oklch(0.69 0.17 350);
+
+  --good:  oklch(0.60 0.14 150);
+  --bad:   oklch(0.62 0.19 22);
+
+  /* radii */
+  --r-xl: 28px;
+  --r-lg: 22px;
+  --r-md: 15px;
+  --r-sm: 11px;
+  --pill: 999px;
+
+  /* shadow */
+  --sh-sm: 0 1px 2px oklch(0.4 0.05 285 / 0.06), 0 2px 6px oklch(0.4 0.05 285 / 0.05);
+  --sh-md: 0 2px 4px oklch(0.4 0.05 285 / 0.05), 0 10px 24px oklch(0.4 0.05 285 / 0.08);
+  --sh-lg: 0 4px 8px oklch(0.4 0.05 285 / 0.06), 0 24px 60px oklch(0.4 0.05 285 / 0.14);
+  --sh-pop: 0 2px 6px oklch(0.4 0.05 285 / 0.08), 0 30px 80px oklch(0.3 0.06 285 / 0.22);
+
+  --ease: cubic-bezier(0.34, 1.32, 0.55, 1);
+  --ease-out: cubic-bezier(0.22, 0.7, 0.3, 1);
+
+  --maxw: 560px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+#root { min-height: 100dvh; }
+
+h1, h2, h3, h4 {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+}
+
+button { font-family: inherit; }
+input, textarea { font-family: inherit; }
+::selection { background: var(--primary-soft); }
+
+/* ---------- layout ---------- */
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 22px 18px calc(34px + env(safe-area-inset-bottom));
+}
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.between { display: flex; align-items: center; justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1; }
+.gap-6 { gap: 6px; } .gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-12 { gap: 12px; } .gap-16 { gap: 16px; }
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: oklch(0.985 0.010 95 / 0.82);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom: 1px solid var(--line-soft);
+  padding-top: env(safe-area-inset-top);
+}
+.nav-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  height: 58px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.brand {
+  display: flex; align-items: center; gap: 11px;
+  cursor: pointer; border: none; background: none;
+  padding: 6px 8px 6px 0; border-radius: var(--r-sm);
+}
+/* Coin mark — a round, embossed €uro coin (distinct from a letter tile) */
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, oklch(0.90 0.10 90), oklch(0.78 0.14 78) 62%, oklch(0.68 0.13 68));
+  box-shadow:
+    inset 0 0 0 2.5px oklch(0.95 0.06 92 / 0.85),
+    inset 0 -2px 4px oklch(0.55 0.12 60 / 0.45),
+    inset 0 2px 3px oklch(1 0 0 / 0.6),
+    var(--sh-sm);
+  display: grid; place-items: center; flex: none; position: relative;
+  transition: transform 0.35s var(--ease);
+}
+.brand:hover .brand-mark { transform: rotate(-12deg) scale(1.06); }
+.brand-mark span {
+  font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
+  color: oklch(0.45 0.10 62); font-size: 19px; line-height: 1;
+  text-shadow: 0 1px 0 oklch(1 0 0 / 0.5);
+}
+.brand-name {
+  font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+  font-size: 17px; letter-spacing: -0.02em; color: var(--ink); white-space: nowrap;
+}
+.nav-right { display: flex; align-items: center; gap: 8px; }
+
+/* segmented language toggle */
+.seg {
+  position: relative; display: inline-flex; padding: 3px;
+  background: var(--surface-3); border: 1px solid var(--line);
+  border-radius: var(--pill); box-shadow: inset 0 1px 2px oklch(0.4 0.05 285 / 0.04);
+}
+.seg button {
+  position: relative; z-index: 1; border: none; background: none; cursor: pointer;
+  width: 36px; padding: 5px 0; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.03em; color: var(--ink-faint); border-radius: var(--pill);
+  transition: color 0.25s, background 0.25s;
+}
+.seg button.on { color: var(--primary); background: var(--surface); box-shadow: var(--sh-sm); }
+
+/* ---------- avatar ---------- */
+.av {
+  border-radius: 50%; display: grid; place-items: center;
+  font-weight: 700; color: #fff; flex: none;
+  font-family: 'Bricolage Grotesque', sans-serif; letter-spacing: 0;
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.35), var(--sh-sm);
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  border: none; border-radius: var(--r-md); font-weight: 700; font-size: 15px;
+  cursor: pointer; padding: 12px 20px;
+  transition: transform 0.18s var(--ease), box-shadow 0.2s, background 0.2s, opacity 0.2s;
+  white-space: nowrap; user-select: none;
+}
+.btn:active { transform: translateY(1px) scale(0.99); }
+.btn-primary {
+  background: var(--primary); color: var(--primary-ink);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.25) inset, var(--sh-md);
+}
+.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 1px 0 oklch(1 0 0 / 0.25) inset, var(--sh-lg); }
+.btn-primary:disabled { background: oklch(0.86 0.03 285); color: oklch(0.7 0.02 285); cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--sh-sm); }
+.btn-ghost:hover { background: var(--surface-2); transform: translateY(-1px); box-shadow: var(--sh-md); }
+.btn-soft { background: var(--primary-soft); color: var(--primary); }
+.btn-soft:hover { background: oklch(0.93 0.05 285); }
+.btn-lg { padding: 15px 26px; font-size: 16.5px; border-radius: var(--r-lg); }
+.btn-block { width: 100%; }
+.btn-sm { padding: 8px 14px; font-size: 13.5px; border-radius: var(--r-sm); }
+.btn-icon { padding: 9px; width: 40px; height: 40px; border-radius: var(--r-md); }
+
+.lnk {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--primary);
+  font-weight: 700; font-size: 14.5px; text-decoration: none; cursor: pointer;
+  border: none; background: none; padding: 4px 0;
+}
+.lnk:hover { text-decoration: underline; }
+
+/* ---------- cards ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--sh-md); }
+.card-pad { padding: 20px; }
+
+/* ---------- inputs ---------- */
+.field-lbl { font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-bottom: 7px; display: block; }
+.input {
+  width: 100%; background: var(--surface); border: 1.5px solid var(--line);
+  border-radius: var(--r-md); padding: 13px 15px; font-size: 16px; color: var(--ink);
+  transition: border 0.18s, box-shadow 0.18s; outline: none;
+}
+.input::placeholder { color: var(--ink-faint); }
+.input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); }
+.input.big { font-size: 18px; padding: 16px 18px; font-weight: 600; }
+
+/* ---------- chips / badges ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--surface-3);
+  border: 1px solid var(--line); border-radius: var(--pill); padding: 5px 12px;
+  font-size: 13px; font-weight: 600; color: var(--ink-soft);
+}
+.muted { color: var(--ink-faint); }
+.soft { color: var(--ink-soft); }
+.center { text-align: center; }
+
+/* entrance */
+.enter { animation: enter 0.4s var(--ease-out) both; }
+@keyframes enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.enter-d1 { animation-delay: 0.05s; }
+.enter-d2 { animation-delay: 0.1s; }
+.enter-d3 { animation-delay: 0.15s; }
+
+/* toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%); z-index: 80;
+  background: var(--ink); color: #fff; padding: 12px 18px; border-radius: var(--pill);
+  font-size: 14px; font-weight: 600; box-shadow: var(--sh-pop);
+  animation: toastIn 0.25s var(--ease-out) both;
+}
+.toast.bad { background: var(--bad); }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }

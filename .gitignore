@@ -1,0 +1,26 @@
+# .NET
+bin/
+obj/
+backend/publish/
+backend/artifact/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/dev-dist/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+
+# Local DynamoDB
+.dynamodb/
+
+# OS / editors
+.DS_Store
+*.swp
+.idea/
+.vs/

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WhoPaysNow.Api/WhoPaysNow.Api.csproj" />
+  <Project Path="WhoPaysNow.Tests/WhoPaysNow.Tests.csproj" />
+</Solution>

@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and adjust, or pass via -var / TF_VAR_ env vars in CI.
+project    = "who-pays-now"
+aws_region = "eu-central-1"
+
+# Path to the built backend package (produced by `dotnet publish` + zip).
+lambda_zip = "../../backend/artifact/lambda.zip"

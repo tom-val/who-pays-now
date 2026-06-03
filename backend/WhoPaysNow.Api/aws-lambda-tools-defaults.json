@@ -1,0 +1,16 @@
+{
+  "Information": [
+    "This file provides defaults for the `dotnet lambda` tooling.",
+    "The CI pipeline publishes a self-contained executable for the",
+    "provided.al2023 custom runtime, so `function-runtime` is provided.al2023."
+  ],
+  "profile": "",
+  "region": "",
+  "configuration": "Release",
+  "function-architecture": "arm64",
+  "function-runtime": "provided.al2023",
+  "function-memory-size": 512,
+  "function-timeout": 15,
+  "function-handler": "bootstrap",
+  "msbuild-parameters": "--self-contained true -r linux-arm64"
+}
