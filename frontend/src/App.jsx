@@ -36,6 +36,14 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
+  const navigate = useCallback((to, replace = false) => {
+    if (to === window.location.pathname) return
+    if (replace) window.history.replaceState({}, '', to)
+    else window.history.pushState({}, '', to)
+    setPath(to)
+    window.scrollTo(0, 0)
+  }, [])
+
   // On launch (e.g. the installed PWA always opens at "/"), jump back into the
   // last group the user was in. Runs once on mount, so navigating Home later
   // (brand click / leaving a group) is respected and won't bounce back.
@@ -45,14 +53,6 @@ export default function App() {
       if (last) navigate(`/g/${last}`, true)
     }
   }, [navigate])
-
-  const navigate = useCallback((to, replace = false) => {
-    if (to === window.location.pathname) return
-    if (replace) window.history.replaceState({}, '', to)
-    else window.history.pushState({}, '', to)
-    setPath(to)
-    window.scrollTo(0, 0)
-  }, [])
 
   const route = parse(path)
 
