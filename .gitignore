@@ -28,3 +28,6 @@ terraform.tfvars
 *.swp
 .idea/
 .vs/
+
+# Local env overrides
+frontend/.env*.local

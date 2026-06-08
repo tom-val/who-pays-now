@@ -44,11 +44,12 @@ export default function App() {
     window.scrollTo(0, 0)
   }, [])
 
-  // On launch (e.g. the installed PWA always opens at "/"), jump back into the
-  // last group the user was in. Runs once on mount, so navigating Home later
-  // (brand click / leaving a group) is respected and won't bounce back.
+  // The installed PWA always launches at "/". Drop the user straight back into
+  // their last group. Gated to standalone (installed) mode so a normal browser
+  // still reaches the create/join Home screen. Runs once on mount.
   useEffect(() => {
-    if (window.location.pathname === '/') {
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone
+    if (standalone && window.location.pathname === '/') {
       const last = store.getLastGroup()
       if (last) navigate(`/g/${last}`, true)
     }

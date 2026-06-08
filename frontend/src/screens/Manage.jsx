@@ -66,6 +66,7 @@ export default function Manage({ groupId, t, navigate }) {
 
   const leave = () => {
     store.clearMemberId(groupId)
+    store.clearLastGroup() // don't auto-return to a group you left
     navigate('/')
   }
 
