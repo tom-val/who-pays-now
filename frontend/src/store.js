@@ -9,4 +9,10 @@ export const store = {
   getMemberId: (groupId) => localStorage.getItem(idKey(groupId)),
   setMemberId: (groupId, memberId) => localStorage.setItem(idKey(groupId), memberId),
   clearMemberId: (groupId) => localStorage.removeItem(idKey(groupId)),
+
+  // Last group the user was in — so launching the installed PWA (which always
+  // opens at "/") drops them straight back into their group.
+  getLastGroup: () => localStorage.getItem('wpn_last_group'),
+  setLastGroup: (groupId) => localStorage.setItem('wpn_last_group', groupId),
+  clearLastGroup: () => localStorage.removeItem('wpn_last_group'),
 };

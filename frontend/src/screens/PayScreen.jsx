@@ -11,7 +11,8 @@ export default function PayScreen({ groupId, t, navigate }) {
   const toast = useToast()
   const [group, setGroup] = useState(null)
   const [status, setStatus] = useState('loading') // loading | ready | notfound | error
-  const [catIndex, setCatIndex] = useState(0)
+  const [pos, setPos] = useState(1) // carousel slide slot (loops via clones)
+  const [snap, setSnap] = useState(false) // true while teleporting across the loop seam (no transition)
   const [modal, setModal] = useState(false)
   const [paying, setPaying] = useState(false)
   const [dx, setDx] = useState(0)
@@ -25,8 +26,14 @@ export default function PayScreen({ groupId, t, navigate }) {
       const g = await api.getGroup(groupId)
       setGroup(g)
       setStatus('ready')
+      store.setLastGroup(groupId) // remember for next PWA launch
     } catch (e) {
-      if (initial) setStatus(e instanceof ApiError && e.status === 404 ? 'notfound' : 'error')
+      if (initial && e instanceof ApiError && e.status === 404) {
+        store.clearLastGroup() // don't keep bouncing into a dead group
+        setStatus('notfound')
+      } else if (initial) {
+        setStatus('error')
+      }
     }
   }, [groupId])
 
@@ -49,9 +56,29 @@ export default function PayScreen({ groupId, t, navigate }) {
 
   const cats = group?.categories || []
   const members = group?.members || []
-  const idx = Math.min(catIndex, Math.max(0, cats.length - 1))
-  const cat = cats[idx]
+  const N = cats.length
+  const looping = N > 1
+  // Render real panels flanked by clones of the last/first so the track can
+  // slide past either end, then teleport back invisibly: [cN-1, c0..cN-1, c0].
+  const slides = looping ? [cats[N - 1], ...cats, cats[0]] : cats
+  const step = 100 / (slides.length || 1)
+  const realIdx = looping ? (((pos - 1) % N) + N) % N : 0
+  const cat = cats[realIdx]
   const payer = cat ? members.find((m) => m.id === cat.currentPayerId) : null
+
+  // Keep the slot valid when the category count changes (added/removed).
+  useEffect(() => {
+    setPos(N > 1 ? 1 : 0)
+    setDx(0)
+    setSliding(false)
+  }, [N])
+
+  // After a slide lands on a clone, jump (without animation) to its real twin.
+  useEffect(() => {
+    if (!snap) return
+    const id = requestAnimationFrame(() => setSnap(false))
+    return () => cancelAnimationFrame(id)
+  }, [snap])
 
   // Once identity is missing from the group (member removed elsewhere), re-claim.
   useEffect(() => {
@@ -61,11 +88,19 @@ export default function PayScreen({ groupId, t, navigate }) {
     }
   }, [status, meId, members, groupId, navigate])
 
-  const goCat = (next) => {
-    if (next < 0 || next >= cats.length) return
+  // Jump to a real category index (from the dots), animated.
+  const goCat = (i) => {
+    setSnap(false)
     setSliding(true)
-    setCatIndex(next)
+    setPos(looping ? i + 1 : 0)
     setDx(0)
+  }
+
+  // When a slide animation ends on a clone, teleport to the matching real slot.
+  const onTrackTransitionEnd = () => {
+    if (!looping) return
+    if (pos > N) { setSnap(true); setPos(pos - N) }
+    else if (pos < 1) { setSnap(true); setPos(pos + N) }
   }
 
   const onPointerDown = (e) => {
@@ -76,9 +111,7 @@ export default function PayScreen({ groupId, t, navigate }) {
   }
   const onPointerMove = (e) => {
     if (!drag.current.active) return
-    let d = e.clientX - drag.current.x0
-    // Rubber-band: resist dragging past the first / last category.
-    if ((idx === 0 && d > 0) || (idx === cats.length - 1 && d < 0)) d *= 0.35
+    const d = e.clientX - drag.current.x0
     drag.current.dx = d
     if (Math.abs(d) > 8) drag.current.moved = true
     setDx(d)
@@ -88,9 +121,10 @@ export default function PayScreen({ groupId, t, navigate }) {
     const d = drag.current.dx
     drag.current.active = false
     setSliding(true)
-    // A decisive horizontal swipe changes category…
-    if (d <= -SWIPE_THRESHOLD && idx < cats.length - 1) { goCat(idx + 1); return }
-    if (d >= SWIPE_THRESHOLD && idx > 0) { goCat(idx - 1); return }
+    setSnap(false)
+    // A decisive horizontal swipe steps the carousel (wraps around endlessly)…
+    if (looping && d <= -SWIPE_THRESHOLD) { setPos(pos + 1); setDx(0); return }
+    if (looping && d >= SWIPE_THRESHOLD) { setPos(pos - 1); setDx(0); return }
     setDx(0)
     // …a near-stationary release is a tap to pay. (Buttons inside the stage
     // handle their own clicks; here cat/payer are null so we no-op for them.)
@@ -167,17 +201,18 @@ export default function PayScreen({ groupId, t, navigate }) {
         ) : (
           <div
             className="track"
+            onTransitionEnd={onTrackTransitionEnd}
             style={{
-              width: `${cats.length * 100}%`,
-              transform: `translateX(calc(${-idx * (100 / cats.length)}% + ${dx}px))`,
-              transition: sliding ? 'transform 0.36s var(--ease-out)' : 'none',
+              width: `${slides.length * 100}%`,
+              transform: `translateX(calc(${-(looping ? pos : 0) * step}% + ${looping ? dx : 0}px))`,
+              transition: sliding && !snap ? 'transform 0.36s var(--ease-out)' : 'none',
             }}
           >
-            {cats.map((c) => {
+            {slides.map((c, s) => {
               const p = members.find((m) => m.id === c.currentPayerId)
               const mine = p && p.id === meId
               return (
-                <div className="cat-panel" key={c.id} style={{ width: `${100 / cats.length}%` }}>
+                <div className="cat-panel" key={s} style={{ width: `${step}%` }}>
                   <div className={`panel ${mine ? 'mine' : ''}`} style={{ '--panel-color': p?.color || 'var(--c-violet)' }}>
                     <span className="cat"><span className="emoji">{c.emoji || '💸'}</span>{c.name}</span>
                     {p ? (
@@ -200,10 +235,10 @@ export default function PayScreen({ groupId, t, navigate }) {
         )}
       </div>
 
-      {cats.length > 1 && (
+      {looping && (
         <div className="dots">
           {cats.map((c, i) => (
-            <button key={c.id} className={`dot ${i === idx ? 'on' : ''}`} onClick={() => goCat(i)} aria-label={c.name} />
+            <button key={c.id} className={`dot ${i === realIdx ? 'on' : ''}`} onClick={() => goCat(i)} aria-label={c.name} />
           ))}
         </div>
       )}
